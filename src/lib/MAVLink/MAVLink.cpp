@@ -83,23 +83,6 @@ void convert_mavlink_to_crsf_telem(uint8_t *CRSFinBuffer, uint8_t count, Handset
                 CRSF::SetHeaderAndCrc((uint8_t *)&crsffm, CRSF_FRAMETYPE_MAVLINK_RAW, CRSF_FRAME_SIZE(sizeof(crsffm)), CRSF_ADDRESS_CRSF_TRANSMITTER);
                 handset->sendTelemetryToTX((uint8_t *)&crsffm);
                 break;
-                /*CRSF_MK_FRAME_T(crsf_mavlink_raw_t)
-                crsfmav = {0};
-                uint8_t buffer[282];
-                uint16_t len= mavlink_msg_to_send_buffer(buffer,&msg);
-                for(uint16_t i=0;i<len;i+=sizeof(crsfmav.p.data)){
-                    uint8_t p_len=min(len-i,(int)sizeof(crsfmav.p.data));
-                    memset(&crsfmav.p.data,0,sizeof(crsfmav.p.data));
-                    crsfmav.p.len=p_len;
-                    memcpy(crsfmav.p.data,&buffer[i],p_len);
-                    //CRSF::SetHeaderAndCrc((uint8_t *)&crsfmav, CRSF_FRAMETYPE_MAVLINK_RAW, CRSF_FRAME_SIZE(sizeof(crsfmav)), CRSF_ADDRESS_CRSF_TRANSMITTER );
-                    //handset->sendTelemetryToTX((uint8_t *)&crsfmav);
-                    //uint8_t buffer[]={0xfa,0xfb,0xfc,0xfd,0xea,0xe,0xea};
-                    memcpy(&crsfmav.p.data,buffer,p_len);
-                    CRSF::SetHeaderAndCrc((uint8_t *)&crsfmav, CRSF_FRAMETYPE_MAVLINK_RAW, CRSF_FRAME_SIZE(sizeof(crsf_mavlink_raw_t)), CRSF_ADDRESS_CRSF_TRANSMITTER );
-                    handset->sendTelemetryToTX((uint8_t *)&crsfmav);
-                }
-               break;*/
             }
             }
            if(true){ //TODO: Replace with option to support mavlink over CRSF 
@@ -112,9 +95,6 @@ void convert_mavlink_to_crsf_telem(uint8_t *CRSFinBuffer, uint8_t count, Handset
                     memset(&crsfmav.p.data,0,sizeof(crsfmav.p.data));
                     crsfmav.p.len=p_len;
                     memcpy(crsfmav.p.data,&buffer[i],p_len);
-                    //CRSF::SetHeaderAndCrc((uint8_t *)&crsfmav, CRSF_FRAMETYPE_MAVLINK_RAW, CRSF_FRAME_SIZE(sizeof(crsfmav)), CRSF_ADDRESS_CRSF_TRANSMITTER );
-                    //handset->sendTelemetryToTX((uint8_t *)&crsfmav);
-                    //uint8_t buffer[]={0xfa,0xfb,0xfc,0xfd,0xea,0xe,0xea};
                     memcpy(&crsfmav.p.data,buffer,p_len);
                     CRSF::SetHeaderAndCrc((uint8_t *)&crsfmav, CRSF_FRAMETYPE_MAVLINK_RAW, CRSF_FRAME_SIZE(sizeof(crsf_mavlink_raw_t)), CRSF_ADDRESS_CRSF_TRANSMITTER );
                     handset->sendTelemetryToTX((uint8_t *)&crsfmav);
