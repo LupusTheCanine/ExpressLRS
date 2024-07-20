@@ -745,6 +745,8 @@ void RxConfig::Load()
     UpgradeEepromV5();
     UpgradeEepromV6();
     UpgradeEepromV7V8();
+    UpgradeEepromV9();
+
     m_config.version = RX_CONFIG_VERSION | RX_CONFIG_MAGIC;
     m_modified = true;
     Commit();
@@ -907,6 +909,15 @@ void RxConfig::UpgradeEepromV7V8()
 #endif
     }
 }
+
+// V9 Upgrade
+void RxConfig::UpgradeEepromV9()
+{
+    if ( m_config.version& ~CONFIG_MAGIC_MASK ==9){
+        
+    }
+}
+
 
 void RxConfig::UpgradeUid(uint8_t *onLoanUid, uint8_t *boundUid)
 {
@@ -1230,6 +1241,23 @@ void RxConfig::SetBindStorage(rx_config_bindstorage_t value)
         // If switching away from returnable, revert
         ReturnLoan();
         m_config.bindStorage = value;
+        m_modified = true;
+    }
+}
+
+void RxConfig::SetTargetSysId(uint8_t value)
+{
+    if (m_config.targetSysId != value)
+    {
+        m_config.targetSysId = value;
+        m_modified = true;
+    }
+}
+void RxConfig::SetSourceSysId(uint8_t value)
+{
+    if (m_config.sourceSysId != value)
+    {
+        m_config.sourceSysId = value;
         m_modified = true;
     }
 }

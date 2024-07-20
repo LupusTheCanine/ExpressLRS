@@ -35,6 +35,29 @@ static struct luaItem_selection luaFailsafeMode = {
     STR_EMPTYSPACE
 };
 
+static struct luaItem_int8 luaTargetSysId = {
+  {"Target SysID", CRSF_UINT8},
+  {
+    {
+      (uint8_t)1,       // value - default to 1
+      (uint8_t)1,       // min
+      (uint8_t)255,     // max
+    }
+  },
+  STR_EMPTYSPACE
+};
+static struct luaItem_int8 luaSourceSysId = {
+  {"Source SysID", CRSF_UINT8},
+  {
+    {
+      (uint8_t)255,       // value - default to 255
+      (uint8_t)1,         // min
+      (uint8_t)255,       // max
+    }
+  },
+  STR_EMPTYSPACE
+};
+
 #if defined(POWER_OUTPUT_VALUES)
 static struct luaItem_selection luaTlmPower = {
     {"Tlm Power", CRSF_TEXT_SELECTION},
@@ -503,6 +526,18 @@ static void registerLuaParameters()
     registerLUAParameter(&luaFailsafeMode, [](struct luaPropertiesCommon* item, uint8_t arg){
       config.SetFailsafeMode((eFailsafeMode)arg);
     });
+  }
+  if (prot0 == PROTOCOL_MAVLINK ||
+      prot1 == PROTOCOL_MAVLINK)
+  {
+    registerLUAParameter(&luaTargetSysId, [](struct luaPropertiesCommon* item, uint8_t arg){
+      config.SetTargetSysId((eFailsafeMode)arg);
+    registerLUAParameter(&luaSourceSysId, [](struct luaPropertiesCommon* item, uint8_t arg){
+      config.SetSourceSysId((eFailsafeMode)arg);
+    });
+
+    });
+
   }
 
   if (GPIO_PIN_ANT_CTRL != UNDEF_PIN)
