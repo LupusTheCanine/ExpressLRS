@@ -130,7 +130,7 @@ static int start()
 
 static int timeout()
 {
-    if (connectionState >= MODE_STATES)
+    if (getConnectionState() >= MODE_STATES)
         return DURATION_NEVER;
 
     switch (BaroReadState)
@@ -191,6 +191,7 @@ device_t Baro_device = {
     .start = start,
     .event = nullptr,
     .timeout = timeout,
+    .subscribe = 0
 };
 
 #endif

@@ -35,7 +35,7 @@ void VtxTriggerSend()
 {
     VtxSendState = VTXSS_MODIFIED;
     sendEepromWrite = true;
-    devicesTriggerEvent();
+    devicesTriggerEvent(EVENT_VTX_CHANGE);
 }
 
 void VtxPitmodeSwitchUpdate()
@@ -105,13 +105,13 @@ static bool initialize()
 static int event()
 {
     if (VtxSendState == VTXSS_MODIFIED ||
-        (VtxSendState == VTXSS_UNKNOWN && connectionState == connected))
+        (VtxSendState == VTXSS_UNKNOWN && getConnectionState() == connected))
     {
         VtxSendState = VTXSS_SENDING1;
         return 1000;
     }
 
-    if (connectionState == disconnected)
+    if (getConnectionState() == disconnected)
     {
         // If the VtxSend has completed, wait before going back to VTXSS_UNKNOWN
         // to ignore a temporary disconnect after saving EEPROM
@@ -122,7 +122,7 @@ static int event()
         }
         VtxSendState = VTXSS_UNKNOWN;
     }
-    else if (VtxSendState == VTXSS_CONFIRMED && connectionState == connected)
+    else if (VtxSendState == VTXSS_CONFIRMED && getConnectionState() == connected)
     {
         return DURATION_NEVER;
     }
@@ -152,7 +152,7 @@ static int timeout()
     if (VtxSendState < VTXSS_SENDINGDONE)
         return 500; // repeat send in 500ms
 
-    if (connectionState == connected)
+    if (getConnectionState() == connected)
     {
         // Connected while sending, assume the MSP got to the RX
         VtxSendState = VTXSS_CONFIRMED;
@@ -175,5 +175,6 @@ device_t VTX_device = {
     .initialize = initialize,
     .start = NULL,
     .event = event,
-    .timeout = timeout
+    .timeout = timeout,
+    .subscribe = EVENT_CONNECTION_CHANGED | EVENT_VTX_CHANGE
 };

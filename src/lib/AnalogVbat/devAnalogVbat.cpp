@@ -107,7 +107,7 @@ static int timeout()
 #endif
 
     unsigned int idx = vbatSmooth.add(adc);
-    if (idx == 0 && connectionState == connected)
+    if (idx == 0 && getConnectionState() == connected)
         reportVbat();
 
     return VBAT_SAMPLE_INTERVAL * vbatUpdateScale;
@@ -118,4 +118,5 @@ device_t AnalogVbat_device = {
     .start = start,
     .event = nullptr,
     .timeout = timeout,
+    .subscribe = 0
 };

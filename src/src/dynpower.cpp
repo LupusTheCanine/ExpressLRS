@@ -89,7 +89,7 @@ void DynamicPower_Update(uint32_t now)
   // Or if telemetry is lost while armed (done up here because dynpower_updated is only updated on telemetry)
   uint8_t boostChannel = config.GetBoostChannel();
   bool armed = handset->IsArmed();
-  if ((connectionState == disconnected && armed) ||
+  if ((getConnectionState() == disconnected && armed) ||
     (boostChannel && (CRSF_to_BIT(ChannelData[AUX9 + boostChannel - 1]) == 0)))
   {
     DynamicPower_SetToConfigPower();

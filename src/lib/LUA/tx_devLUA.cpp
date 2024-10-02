@@ -282,7 +282,6 @@ static struct luaItem_string luaBackpackVersion = {
 //---------------------------- BACKPACK ------------------
 
 static char luaBadGoodString[10];
-static int event();
 
 extern TxConfig config;
 extern void VtxTriggerSend();
@@ -371,7 +370,7 @@ static void luadevUpdateBackpackOpts()
 
 static void setBleJoystickMode()
 {
-  connectionState = bleJoystick;
+  setConnectionState(bleJoystick);
 }
 
 static void luahandWifiBle(struct luaPropertiesCommon *item, uint8_t arg)
@@ -399,7 +398,7 @@ static void luahandWifiBle(struct luaPropertiesCommon *item, uint8_t arg)
   switch ((luaCmdStep_e)arg)
   {
     case lcsClick:
-      if (connectionState == connected)
+      if (getConnectionState() == connected)
       {
         sendLuaCommandResponse(cmd, lcsAskConfirm, textConfirm);
         return;
@@ -413,7 +412,7 @@ static void luahandWifiBle(struct luaPropertiesCommon *item, uint8_t arg)
 
     case lcsCancel:
       sendLuaCommandResponse(cmd, lcsIdle, STR_EMPTYSPACE);
-      if (connectionState == targetState)
+      if (getConnectionState() == targetState)
       {
         rebootTime = millis() + 400;
       }
@@ -614,7 +613,7 @@ static void registerLuaParameters()
       uint8_t newSwitchMode = adjustSwitchModeForAirRate(
         (OtaSwitchMode_e)config.GetSwitchMode(), get_elrs_airRateConfig(actualRate)->PayloadLength);
       // If the switch mode is going to change, block the change while connected
-      bool isDisconnected = connectionState == disconnected;
+      bool isDisconnected = getConnectionState() == disconnected;
       // Don't allow the switch mode to change if the TX is in mavlink mode
       // Wide switchmode is not compatible with mavlink, and the switchmode is
       // auto configuredwhen entering mavlink mode
@@ -649,7 +648,7 @@ static void registerLuaParameters()
       registerLUAParameter(&luaSwitch, [](struct luaPropertiesCommon *item, uint8_t arg) {
         // Only allow changing switch mode when disconnected since we need to guarantee
         // the pack and unpack functions are matched
-        bool isDisconnected = connectionState == disconnected;
+        bool isDisconnected = getConnectionState() == disconnected;
         // Don't allow the switch mode to change if the TX is in mavlink mode
         // Wide switchmode is not compatible with mavlink, and the switchmode is
         // auto configuredwhen entering mavlink mode
@@ -674,7 +673,7 @@ static void registerLuaParameters()
     registerLUAParameter(&luaLinkMode, [](struct luaPropertiesCommon *item, uint8_t arg) {
       // Only allow changing when disconnected since we need to guarantee
       // the switch pack and unpack functions are matched on the tx and rx.
-      bool isDisconnected = connectionState == disconnected;
+      bool isDisconnected = getConnectionState() == disconnected;
       if (isDisconnected)
       {
         config.SetLinkMode(arg);
@@ -689,7 +688,7 @@ static void registerLuaParameters()
       registerLUAParameter(&luaModelMatch, [](struct luaPropertiesCommon *item, uint8_t arg) {
         bool newModelMatch = arg;
         config.SetModelMatch(newModelMatch);
-        if (connectionState == connected)
+        if (getConnectionState() == connected)
         {
           mspPacket_t msp;
           msp.reset();
@@ -826,7 +825,7 @@ static void registerLuaParameters()
 
 static int event()
 {
-  if (connectionState > FAILURE_STATES)
+  if (getConnectionState() > FAILURE_STATES)
   {
     return DURATION_NEVER;
   }
@@ -895,7 +894,7 @@ static int timeout()
 
 static int start()
 {
-  if (connectionState > FAILURE_STATES)
+  if (getConnectionState() > FAILURE_STATES)
   {
     return DURATION_NEVER;
   }
@@ -913,7 +912,8 @@ device_t LUA_device = {
   .initialize = nullptr,
   .start = start,
   .event = event,
-  .timeout = timeout
+  .timeout = timeout,
+  .subscribe = 0xFFFF // all events
 };
 
 #endif

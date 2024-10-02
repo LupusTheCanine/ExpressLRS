@@ -97,12 +97,12 @@ void OLEDDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t
     }
 
     u8g2->setFont(u8g2_font_t0_15_mr);
-    if (connectionState == radioFailed)
+    if (getConnectionState() == radioFailed)
     {
         drawCentered(15, "BAD");
         drawCentered(32, "RADIO");
     }
-    else if (connectionState == noCrossfire)
+    else if (getConnectionState() == noCrossfire)
     {
         drawCentered(15, "NO");
         drawCentered(32, "HANDSET");

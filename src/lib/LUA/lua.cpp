@@ -257,8 +257,8 @@ void setLuaWarningFlag(lua_Flags flag, bool value)
 
 static void updateElrsFlags()
 {
-  setLuaWarningFlag(LUA_FLAG_MODEL_MATCH, connectionState == connected && connectionHasModelMatch == false);
-  setLuaWarningFlag(LUA_FLAG_CONNECTED, connectionState == connected);
+  setLuaWarningFlag(LUA_FLAG_MODEL_MATCH, getConnectionState() == connected && connectionHasModelMatch == false);
+  setLuaWarningFlag(LUA_FLAG_CONNECTED, getConnectionState() == connected);
   setLuaWarningFlag(LUA_FLAG_ISARMED, handset->IsArmed());
 }
 

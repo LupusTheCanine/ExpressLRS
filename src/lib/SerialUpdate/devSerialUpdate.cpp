@@ -21,7 +21,7 @@ static bool initialize()
 
 static int event()
 {
-    if (connectionState == serialUpdate && running)
+    if (getConnectionState() == serialUpdate && running)
     {
         running = false;
         hwTimer::stop();
@@ -31,16 +31,11 @@ static int event()
         Radio.End();
         return DURATION_IMMEDIATELY;
     }
-    return DURATION_IGNORE;
+    return DURATION_NEVER;
 }
 
 static int timeout()
 {
-    if (connectionState != serialUpdate)
-    {
-        return DURATION_NEVER;
-    }
-
     start_esp_upload();
     while (true)
     {
@@ -57,6 +52,6 @@ device_t SerialUpdate_device = {
     .initialize = initialize,
     .start = nullptr,
     .event = event,
-    .timeout = timeout
-};
+    .timeout = timeout,
+    .subscribe = EVENT_CONNECTION_CHANGED};
 #endif

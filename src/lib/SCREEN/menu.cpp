@@ -69,11 +69,11 @@ static void displayIdleScreen(bool init)
 
     uint8_t changed = init ? CHANGED_ALL : 0;
     message_index_t disp_message;
-    if (connectionState == noCrossfire || connectionState > FAILURE_STATES) {
+    if (getConnectionState() == noCrossfire || getConnectionState() > FAILURE_STATES) {
         disp_message = MSG_ERROR;
     } else if(handset->IsArmed()) {
         disp_message = MSG_ARMED;
-    } else if(connectionState == connected) {
+    } else if(getConnectionState() == connected) {
         if (connectionHasModelMatch) {
             disp_message = MSG_CONNECTED;
         } else {
@@ -234,7 +234,7 @@ static void saveValueIndex(bool init)
             uint8_t newSwitchMode = adjustSwitchModeForAirRate(
                 (OtaSwitchMode_e)config.GetSwitchMode(), get_elrs_airRateConfig(actualRate)->PayloadLength);
             // If the switch mode is going to change, block the change while connected
-            if (newSwitchMode == OtaSwitchModeCurrent || connectionState == disconnected)
+            if (newSwitchMode == OtaSwitchModeCurrent || getConnectionState() == disconnected)
             {
                 deferExecutionMillis(100, [actualRate, newSwitchMode](){
                     config.SetRate(actualRate);
@@ -248,7 +248,7 @@ static void saveValueIndex(bool init)
         case STATE_SWITCH: {
             // Only allow changing switch mode when disconnected since we need to guarantee
             // the pack and unpack functions are matched
-            if (connectionState == disconnected)
+            if (getConnectionState() == disconnected)
             {
                 deferExecutionMillis(100, [val](){
                     config.SetSwitchMode(val);
@@ -336,12 +336,12 @@ static void executeBLE(bool init)
 {
     if (init)
     {
-        connectionState = bleJoystick;
+        setConnectionState(bleJoystick);
         display->displayBLEStatus();
     }
     else
     {
-        if (connectionState != bleJoystick)
+        if (getConnectionState() != bleJoystick)
         {
             state_machine.popState();
         }
@@ -350,7 +350,7 @@ static void executeBLE(bool init)
 
 static void exitBLE(bool init)
 {
-    if (connectionState == bleJoystick) {
+    if (getConnectionState() == bleJoystick) {
         rebootTime = millis() + 200;
     }
 }
@@ -363,7 +363,7 @@ static void displayWiFiConfirm(bool init)
 
 static void exitWiFi(bool init)
 {
-    if (connectionState == wifiUpdate) {
+    if (getConnectionState() == wifiUpdate) {
         rebootTime = millis() + 200;
     }
 }
@@ -401,7 +401,7 @@ static void executeWiFi(bool init)
     switch (state_machine.getParentState())
     {
         case STATE_WIFI_TX:
-            running = connectionState == wifiUpdate;
+            running = getConnectionState() == wifiUpdate;
             if (running)
             {
                 display->displayWiFiStatus();

@@ -259,7 +259,7 @@ expresslrs_tlm_ratio_e ICACHE_RAM_ATTR UpdateTlmRatioEffective()
     {
       retVal = TLM_RATIO_NO_TLM;
       // Avoid updating ExpressLRS_currTlmDenom until connectionState == disconnected
-      if (connectionState == connected)
+      if (getConnectionState() == connected)
         updateTelemDenom = false;
     }
   }
@@ -272,7 +272,7 @@ expresslrs_tlm_ratio_e ICACHE_RAM_ATTR UpdateTlmRatioEffective()
   {
     uint8_t newTlmDenom = TLMratioEnumToValue(retVal);
     // Delay going into disconnected state when the TLM ratio increases
-    if (connectionState == connected && ExpressLRS_currTlmDenom > newTlmDenom)
+    if (getConnectionState() == connected && ExpressLRS_currTlmDenom > newTlmDenom)
       LastTLMpacketRecvMillis = SyncPacketLastSent;
     ExpressLRS_currTlmDenom = newTlmDenom;
   }
@@ -291,7 +291,7 @@ void ICACHE_RAM_ATTR GenerateSyncPacketData(OTA_Sync_s * const syncPtr)
   if (syncSpamCounterAfterRateChange && Index == ExpressLRS_currAirRate_Modparams->index)
   {
     --syncSpamCounterAfterRateChange;
-    if (connectionState == connected) // We are connected again after a rate change.  No need to keep spaming sync.
+    if (getConnectionState() == connected) // We are connected again after a rate change.  No need to keep spaming sync.
       syncSpamCounterAfterRateChange = 0;
   }
 
@@ -384,7 +384,7 @@ void SetRFLinkRate(uint8_t index) // Set speed of RF link
   CRSF::LinkStatistics.rf_Mode = ModParams->enum_rate;
 
   handset->setPacketInterval(interval * ExpressLRS_currAirRate_Modparams->numOfSends);
-  connectionState = disconnected;
+  setConnectionState(disconnected);
   rfModeLastChangedMS = millis();
 }
 
@@ -498,7 +498,7 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
   static uint8_t syncSlot;
 
   const bool isTlmDisarmed = config.GetTlm() == TLM_RATIO_DISARMED;
-  uint32_t SyncInterval = (connectionState == connected && !isTlmDisarmed) ? ExpressLRS_currAirRate_RFperfParams->SyncPktIntervalConnected : ExpressLRS_currAirRate_RFperfParams->SyncPktIntervalDisconnected;
+  uint32_t SyncInterval = (getConnectionState() == connected && !isTlmDisarmed) ? ExpressLRS_currAirRate_RFperfParams->SyncPktIntervalConnected : ExpressLRS_currAirRate_RFperfParams->SyncPktIntervalDisconnected;
   bool skipSync = InBindingMode ||
     // TLM_RATIO_DISARMED keeps sending sync packets even when armed until the RX stops sending telemetry and the TLM=Off has taken effect
     (isTlmDisarmed && handset->IsArmed() && (ExpressLRS_currTlmDenom == 1));
@@ -638,7 +638,7 @@ void ICACHE_RAM_ATTR timerCallback()
   }
 
   // Do not transmit or advance FHSS/Nonce until in disconnected/connected state
-  if (connectionState == awaitingModelId)
+  if (getConnectionState() == awaitingModelId)
     return;
 
   // Tx Antenna Diversity
@@ -681,7 +681,7 @@ void ICACHE_RAM_ATTR timerCallback()
 static void UARTdisconnected()
 {
   hwTimer::stop();
-  connectionState = noCrossfire;
+  setConnectionState(noCrossfire);
 }
 
 static void UARTconnected()
@@ -691,12 +691,12 @@ static void UARTconnected()
 
   auto index = adjustPacketRateForBaud(config.GetRate());
   config.SetRate(index);
-  if (connectionState == noCrossfire || connectionState < MODE_STATES)
+  if (getConnectionState() == noCrossfire || getConnectionState() < MODE_STATES)
   {
     // When CRSF first connects, always go into a brief delay before
     // starting to transmit, to make sure a ModelID update isn't coming
     // right behind it
-    connectionState = awaitingModelId;
+    setConnectionState(awaitingModelId);
   }
   // But start the timer to get OpenTX sync going and a ModelID update sent
   hwTimer::resume();
@@ -746,13 +746,13 @@ void ModelUpdateReq()
     ModelUpdatePending = true;
   }
 
-  devicesTriggerEvent();
+  devicesTriggerEvent(EVENT_MODEL_SELECTED);
 
   // Jump from awaitingModelId to transmitting to break the startup delay now
   // that the ModelID has been confirmed by the handset
-  if (connectionState == awaitingModelId)
+  if (getConnectionState() == awaitingModelId)
   {
-    connectionState = disconnected;
+    setConnectionState(disconnected);
   }
 }
 
@@ -763,14 +763,14 @@ static void ConfigChangeCommit()
   config.SetRate(index);
 
   // Write the uncommitted eeprom values (may block for a while)
-  config.Commit();
+  uint32_t changes = config.Commit();
   // Change params after the blocking finishes as a rate change will change the radio freq
   ChangeRadioParams();
   // Clear the commitInProgress flag so normal processing resumes
   commitInProgress = false;
   // UpdateFolderNames is expensive so it is called directly instead of in event() which gets called a lot
   luadevUpdateFolderNames();
-  devicesTriggerEvent();
+  devicesTriggerEvent(changes);
 }
 
 static void CheckConfigChangePending()
@@ -823,7 +823,7 @@ void ICACHE_RAM_ATTR TXdoneISR()
     return; // Already finished transmission and do not call HandleFHSS() a second time, which may hop the frequency!
   }
 
-  if (connectionState != awaitingModelId)
+  if (getConnectionState() != awaitingModelId)
   {
     HandleFHSS();
     HandlePrepareForTLM();
@@ -854,9 +854,9 @@ static void UpdateConnectDisconnectStatus()
   const uint32_t now = millis();
   if (lastTlmMillis && ((now - lastTlmMillis) <= msConnectionLostTimeout))
   {
-    if (connectionState != connected)
+    if (getConnectionState() != connected)
     {
-      connectionState = connected;
+      setConnectionState(connected);
       CRSFHandset::ForwardDevicePings = true;
       DBGLN("got downlink conn");
 
@@ -868,10 +868,10 @@ static void UpdateConnectDisconnectStatus()
     }
   }
   // If past RX_LOSS_CNT, or in awaitingModelId state for longer than DisconnectTimeoutMs, go to disconnected
-  else if (connectionState == connected ||
-    (now - rfModeLastChangedMS) > ExpressLRS_currAirRate_RFperfParams->DisconnectTimeoutMs)
+  else if (getConnectionState() == connected ||
+    (getConnectionState() == awaitingModelId && (now - rfModeLastChangedMS) > ExpressLRS_currAirRate_RFperfParams->DisconnectTimeoutMs))
   {
-    connectionState = disconnected;
+    setConnectionState(disconnected);
     connectionHasModelMatch = true;
     CRSFHandset::ForwardDevicePings = false;
   }
@@ -1101,7 +1101,7 @@ static void HandleUARTin()
 
         // Lets check if the data is Mav and auto change LinkMode
         // Start the hwTimer since the user might be operating the module as a standalone unit without a handset.
-        if (connectionState == noCrossfire)
+        if (getConnectionState() == noCrossfire)
         {
           if (isThisAMavPacket(buf, size))
           {
@@ -1131,7 +1131,7 @@ static void HandleUARTin()
 
         // The tx is in Mavlink mode and receiving data from the Backpack.
         // Start the hwTimer since the user might be operating the module as a standalone unit without a handset.
-        if (connectionState == noCrossfire)
+        if (getConnectionState() == noCrossfire)
         {
           if (isThisAMavPacket(buf, size))
           {
@@ -1243,7 +1243,7 @@ bool setupHardwareFromOptions()
     devicesRegister(wifi_device, ARRAY_SIZE(wifi_device));
     devicesInit();
 
-    connectionState = hardwareUndefined;
+    setConnectionState(hardwareUndefined);
     return false;
   }
   return true;
@@ -1274,7 +1274,7 @@ static void setupBindingFromConfig()
 static void cyclePower()
 {
   // Only change power if we are running normally
-  if (connectionState < MODE_STATES)
+  if (getConnectionState() < MODE_STATES)
   {
     PowerLevels_e curr = POWERMGNT::currPower();
     if (curr == POWERMGNT::getMaxPower())
@@ -1334,7 +1334,7 @@ void setup()
 
     if (!init_success)
     {
-      connectionState = radioFailed;
+      setConnectionState(radioFailed);
     }
     else
     {
@@ -1350,7 +1350,7 @@ void setup()
       SetClearChannelAssessmentTime();
   #endif
       hwTimer::init(nullptr, timerCallback);
-      connectionState = noCrossfire;
+      setConnectionState(noCrossfire);
     }
   }
   else
@@ -1386,7 +1386,7 @@ void loop()
   }
   #endif
 
-  if (connectionState < MODE_STATES)
+  if (getConnectionState() < MODE_STATES)
   {
     UpdateConnectDisconnectStatus();
   }
@@ -1406,7 +1406,7 @@ void loop()
 
   HandleUARTin();
 
-  if (connectionState > MODE_STATES)
+  if (getConnectionState() > MODE_STATES)
   {
     return;
   }
@@ -1418,7 +1418,7 @@ void loop()
 
   /* Send TLM updates to handset if connected + reporting period
    * is elapsed. This keeps handset happy dispite of the telemetry ratio */
-  if ((connectionState == connected) && (LastTLMpacketRecvMillis != 0) &&
+  if ((getConnectionState() == connected) && (LastTLMpacketRecvMillis != 0) &&
       (now >= (uint32_t)(firmwareOptions.tlm_report_interval + TLMpacketReported)))
   {
     uint8_t linkStatisticsFrame[CRSF_FRAME_NOT_COUNTED_BYTES + CRSF_FRAME_SIZE(sizeof(crsfLinkStatistics_t))];

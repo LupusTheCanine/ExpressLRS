@@ -90,7 +90,7 @@ static int event()
         return DURATION_NEVER;
     }
 #else
-    if (connectionState == connected)
+    if (getConnectionState() == connected)
     {
         return DURATION_NEVER;
     }
@@ -116,5 +116,5 @@ device_t Button_device = {
     .initialize = initialize,
     .start = start,
     .event = event,
-    .timeout = timeout
-};
+    .timeout = timeout,
+    .subscribe = EVENT_ARM_FLAG_CHANGED | EVENT_CONNECTION_CHANGED};

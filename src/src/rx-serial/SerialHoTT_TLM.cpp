@@ -75,7 +75,7 @@ void SerialHoTT_TLM::sendQueuedData(uint32_t maxBytesToSend)
 {
     uint32_t now = millis();
 
-    if(connectionState != connected)
+    if(getConnectionState() != connected)
     {
         // suspend device discovery timer until receiver is connected
         discoveryTimerStart = now;      

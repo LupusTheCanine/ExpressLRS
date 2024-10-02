@@ -401,7 +401,7 @@ static int start()
 
 static int timeout()
 {
-    if (blinkyState == STARTUP && connectionState < FAILURE_STATES)
+    if (blinkyState == STARTUP && getConnectionState() < FAILURE_STATES)
     {
         return blinkyUpdate();
     }
@@ -412,7 +412,7 @@ static int timeout()
         return flashLED(blinkyColor, 192, 0, LEDSEQ_BINDING, sizeof(LEDSEQ_BINDING));
     }
 #endif
-    switch (connectionState)
+    switch (getConnectionState())
     {
     case connected:
 #if defined(TARGET_RX)
@@ -466,5 +466,5 @@ device_t RGB_device = {
     .initialize = initialize,
     .start = start,
     .event = timeout,
-    .timeout = timeout
-};
+    .timeout = timeout,
+    .subscribe = EVENT_CONNECTION_CHANGED | EVENT_ENTER_BIND_MODE | EVENT_EXIT_BIND_MODE};

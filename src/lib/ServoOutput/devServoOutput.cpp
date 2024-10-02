@@ -226,13 +226,13 @@ static int start()
 
 static int event()
 {
-    if (connectionState == disconnected)
+    if (getConnectionState() == disconnected)
     {
         // Disconnected should come after failsafe on the RX,
         // so it is safe to shut down when disconnected
         return DURATION_NEVER;
     }
-    else if (connectionState == wifiUpdate)
+    else if (getConnectionState() == wifiUpdate)
     {
         for (int ch = 0; ch < GPIO_PIN_PWM_OUTPUTS_COUNT; ++ch)
         {
@@ -266,4 +266,4 @@ device_t ServoOut_device = {
     .start = start,
     .event = event,
     .timeout = timeout,
-};
+    .subscribe = EVENT_CONNECTION_CHANGED};

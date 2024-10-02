@@ -53,12 +53,12 @@ static int handle(void)
     }
     uint32_t now = millis();
 
-    if (state_machine.getParentState() != STATE_WIFI_TX && connectionState == wifiUpdate)
+    if (state_machine.getParentState() != STATE_WIFI_TX && getConnectionState() == wifiUpdate)
     {
         jumpToWifiRunning();
     }
     
-    if (state_machine.getParentState() != STATE_JOYSTICK && connectionState == bleJoystick)
+    if (state_machine.getParentState() != STATE_JOYSTICK && getConnectionState() == bleJoystick)
     {
         jumpToBleRunning();
     }
@@ -68,7 +68,7 @@ static int handle(void)
         int key;
         bool isLongPressed;
         // if we are using analog joystick then we can't cancel because WiFi is using the ADC2 (i.e. channel >= 8)!
-        if (connectionState == wifiUpdate && digitalPinToAnalogChannel(GPIO_PIN_JOYSTICK) >= 8)
+        if (getConnectionState() == wifiUpdate && digitalPinToAnalogChannel(GPIO_PIN_JOYSTICK) >= 8)
         {
             key = INPUT_KEY_NO_PRESS;
         }
@@ -151,11 +151,11 @@ static bool initialize()
 
         registerButtonFunction(ACTION_GOTO_VTX_BAND, [](){
             jumpToBandSelect = true;
-            devicesTriggerEvent();
+            handle();
         });
         registerButtonFunction(ACTION_GOTO_VTX_CHANNEL, [](){
             jumpToChannelSelect = true;
-            devicesTriggerEvent();
+            handle();
         });
     }
     return OPT_HAS_SCREEN;
@@ -180,5 +180,7 @@ device_t Screen_device = {
     .initialize = initialize,
     .start = start,
     .event = event,
-    .timeout = timeout};
+    .timeout = timeout,
+    .subscribe = EVENT_CONNECTION_CHANGED | EVENT_ARM_FLAG_CHANGED
+};
 #endif

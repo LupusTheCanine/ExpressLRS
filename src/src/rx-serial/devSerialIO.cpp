@@ -68,13 +68,13 @@ static int event(devserial_ctx_t *ctx)
 {
     if ((*(ctx->io)) != nullptr)
     {
-        if (ctx->lastConnectionState != connectionState)
+        if (ctx->lastConnectionState != getConnectionState())
         {
-            (*(ctx->io))->setFailsafe(connectionState == disconnected);
+            (*(ctx->io))->setFailsafe(getConnectionState() == disconnected);
         }
     }
 
-    ctx->lastConnectionState = connectionState;
+    ctx->lastConnectionState = getConnectionState();
 
     return DURATION_IGNORE;
 }
@@ -200,7 +200,7 @@ static int timeout(devserial_ctx_t *ctx)
     }
 
     // stop callbacks when serial driver wants immediate sends or when doing serial update
-    if ((*(ctx->io))->sendImmediateRC() || connectionState == serialUpdate)
+    if ((*(ctx->io))->sendImmediateRC() || getConnectionState() == serialUpdate)
     {
         return DURATION_NEVER;
     }
@@ -232,7 +232,7 @@ static int timeout(devserial_ctx_t *ctx)
 
 void sendImmediateRC()
 {
-    if (*(serial0.io) != nullptr && (*(serial0.io))->sendImmediateRC() && connectionState != serialUpdate)
+    if (*(serial0.io) != nullptr && (*(serial0.io))->sendImmediateRC() && getConnectionState() != serialUpdate)
     {
         bool missed = serial0.frameMissed;
         serial0.frameMissed = false;
@@ -277,16 +277,16 @@ device_t Serial0_device = {
     .initialize = nullptr,
     .start = start,
     .event = event0,
-    .timeout = timeout0
-};
+    .timeout = timeout0,
+    .subscribe = EVENT_CONNECTION_CHANGED};
 
 #if defined(PLATFORM_ESP32)
 device_t Serial1_device = {
     .initialize = nullptr,
     .start = start,
     .event = event1,
-    .timeout = timeout1
-};
+    .timeout = timeout1,
+    .subscribe = EVENT_CONNECTION_CHANGED};
 #endif
 
 #endif

@@ -41,7 +41,7 @@ static int start()
  */
 static int event()
 {
-    if (connectionState > connectionState_e::MODE_STATES)
+    if (getConnectionState() > connectionState_e::MODE_STATES)
     {
         return DURATION_NEVER;
     }
@@ -89,6 +89,7 @@ device_t PDET_device = {
     .initialize = initialize,
     .start = start,
     .event = event,
-    .timeout = timeout
+    .timeout = timeout,
+    .subscribe = EVENT_CONNECTION_CHANGED
 };
 #endif

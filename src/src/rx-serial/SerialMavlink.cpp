@@ -75,7 +75,7 @@ int SerialMavlink::getMaxSerialReadSize()
 
 void SerialMavlink::processBytes(uint8_t *bytes, u_int16_t size)
 {
-    if (connectionState == connected)
+    if (getConnectionState() == connected)
     {
         mavlinkInputBuffer.atomicPushBytes(bytes, size);
     }

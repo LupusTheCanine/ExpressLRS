@@ -355,8 +355,11 @@ static void luaparamMappingChannelOut(struct luaPropertiesCommon *item, uint8_t 
         pwmModes[lastPos] = '\0';
     }
 
-    // Trigger an event to update the related fields to represent the selected channel
-    devicesTriggerEvent();
+    // update the related fields to represent the selected channel
+    const rx_config_pwm_t *pwmCh = config.GetPwmChannel(luaMappingChannelOut.properties.u.value - 1);
+    setLuaUint8Value(&luaMappingChannelIn, pwmCh->val.inputChannel + 1);
+    setLuaTextSelectionValue(&luaMappingOutputMode, pwmCh->val.mode);
+    setLuaTextSelectionValue(&luaMappingInverted, pwmCh->val.inverted);
 }
 
 static void luaparamMappingChannelIn(struct luaPropertiesCommon *item, uint8_t arg)
@@ -646,7 +649,7 @@ static int timeout()
   // Receivers can only `UpdateParamReq == true` every 4th packet due to the transmitter cadence in 1:2
   // Channels, Downlink Telemetry Slot, Uplink Telemetry (the write command), Downlink Telemetry Slot...
   // (interval * 4 / 1000) or 1 second if not connected
-  return (connectionState == connected) ? ExpressLRS_currAirRate_Modparams->interval / 250 : 1000;
+  return (getConnectionState() == connected) ? ExpressLRS_currAirRate_Modparams->interval / 250 : 1000;
 }
 
 static int start()
@@ -660,7 +663,8 @@ device_t LUA_device = {
   .initialize = nullptr,
   .start = start,
   .event = event,
-  .timeout = timeout
+  .timeout = timeout,
+  .subscribe = 0xFFFF // any and all events
 };
 
 #endif

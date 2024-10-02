@@ -271,7 +271,7 @@ void CRSFHandset::RcPacketToChannelsData() // data is packed as 11 bits per chan
     if (prev_AUX1 != ChannelData[4])
     {
         #if defined(PLATFORM_ESP32)
-        devicesTriggerEvent();
+        devicesTriggerEvent(EVENT_ARM_FLAG_CHANGED);
         #endif
     }
 }
@@ -710,7 +710,7 @@ bool CRSFHandset::UARTwdt()
         // If no packets or more bad than good packets, rate cycle/autobaud the UART but
         // do not adjust the parameters while in wifi mode. If a firmware is being
         // uploaded, it will cause tons of serial errors during the flash writes
-        if ((connectionState != wifiUpdate) && (BadPktsCount >= GoodPktsCount || !controllerConnected))
+        if ((getConnectionState() != wifiUpdate) && (BadPktsCount >= GoodPktsCount || !controllerConnected))
         {
             DBGLN("Too many bad UART RX packets!");
 

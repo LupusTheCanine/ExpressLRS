@@ -21,7 +21,7 @@ int SerialAirPort::getMaxSerialReadSize()
 
 void SerialAirPort::processBytes(uint8_t *bytes, u_int16_t size)
 {
-    if (connectionState == connected)
+    if (getConnectionState() == connected)
     {
         apInputBuffer.atomicPushBytes(bytes, size);
     }

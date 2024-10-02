@@ -375,7 +375,7 @@ bool ICACHE_RAM_ATTR HandleFHSS()
 {
     uint8_t modresultFHSS = (OtaNonce + 1) % ExpressLRS_currAirRate_Modparams->FHSShopInterval;
 
-    if ((ExpressLRS_currAirRate_Modparams->FHSShopInterval == 0) || alreadyFHSS == true || InBindingMode || (modresultFHSS != 0) || (connectionState == disconnected))
+    if ((ExpressLRS_currAirRate_Modparams->FHSShopInterval == 0) || alreadyFHSS == true || InBindingMode || (modresultFHSS != 0) || (getConnectionState() == disconnected))
     {
         return false;
     }
@@ -445,7 +445,7 @@ bool ICACHE_RAM_ATTR HandleSendTelemetryResponse()
 {
     uint8_t modresult = (OtaNonce + 1) % ExpressLRS_currTlmDenom;
 
-    if ((connectionState == disconnected) || (ExpressLRS_currTlmDenom == 1) || (alreadyTLMresp == true) || (modresult != 0) || !teamraceHasModelMatch)
+    if ((getConnectionState() == disconnected) || (ExpressLRS_currTlmDenom == 1) || (alreadyTLMresp == true) || (modresult != 0) || !teamraceHasModelMatch)
     {
         return false; // don't bother sending tlm if disconnected or TLM is off
     }
@@ -615,7 +615,7 @@ int32_t ICACHE_RAM_ATTR HandleFreqCorr(bool value)
 
 void ICACHE_RAM_ATTR updatePhaseLock()
 {
-    if (connectionState != disconnected && PFDloop.hasResult())
+    if (getConnectionState() != disconnected && PFDloop.hasResult())
     {
         int32_t RawOffset = PFDloop.calcResult();
         int32_t Offset = LPF_Offset.update(RawOffset);
@@ -640,7 +640,7 @@ void ICACHE_RAM_ATTR updatePhaseLock()
             }
         }
 
-        if (connectionState != connected)
+        if (getConnectionState() != connected)
         {
             hwTimer::phaseShift(RawOffset >> 1);
         }
@@ -827,11 +827,11 @@ void LostConnection(bool resumeRx)
     DBGLN("lost conn fc=%d fo=%d", FreqCorrection, hwTimer::getFreqOffset());
 
     // Use this rate as the initial rate next time if we connected on it
-    if (connectionState == connected)
+    if (getConnectionState() == connected)
         config.SetRateInitialIdx(ExpressLRS_nextAirRateIndex);
 
     RFmodeCycleMultiplier = 1;
-    connectionState = disconnected; //set lost connection
+    setConnectionState(disconnected); //set lost connection
     RXtimerState = tim_disconnected;
     hwTimer::resetFreqOffset();
     PfdPrevRawOffset = 0;
@@ -863,7 +863,7 @@ void LostConnection(bool resumeRx)
 void ICACHE_RAM_ATTR TentativeConnection(unsigned long now)
 {
     PFDloop.reset();
-    connectionState = tentative;
+    setConnectionState(tentative);
     connectionHasModelMatch = false;
     RXtimerState = tim_disconnected;
     DBGLN("tentative conn");
@@ -878,14 +878,14 @@ void ICACHE_RAM_ATTR TentativeConnection(unsigned long now)
 
 void GotConnection(unsigned long now)
 {
-    if (connectionState == connected)
+    if (getConnectionState() == connected)
     {
         return; // Already connected
     }
 
     LockRFmode = firmwareOptions.lock_on_first_connection;
 
-    connectionState = connected; //we got a packet, therefore no lost connection
+    setConnectionState(connected); //we got a packet, therefore no lost connection
     RXtimerState = tim_tentative;
     GotConnectionMillis = now;
     webserverPreventAutoStart = true;
@@ -903,7 +903,7 @@ static void ICACHE_RAM_ATTR ProcessRfPacket_RC(OTA_Packet_s const * const otaPkt
 {
     // Must be fully connected to process RC packets, prevents processing RC
     // during sync, where packets can be received before connection
-    if (connectionState != connected || SwitchModePending)
+    if (getConnectionState() != connected || SwitchModePending)
         return;
 
     bool telemetryConfirmValue = OtaUnpackChannelData(otaPktPtr, ChannelData, ExpressLRS_currTlmDenom);
@@ -991,7 +991,7 @@ static void ICACHE_RAM_ATTR ProcessRfPacket_MSP(OTA_Packet_s const * const otaPk
 
     // Must be fully connected to process MSP, prevents processing MSP
     // during sync, where packets can be received before connection
-    if (connectionState == connected)
+    if (getConnectionState() == connected)
     {
         MspReceiver.ReceiveData(packageIndex, payload, dataLen);
     }
@@ -1014,7 +1014,7 @@ static void ICACHE_RAM_ATTR updateSwitchModePendingFromOta(uint8_t newSwitchMode
     // Switch mode can be changed while disconnected
     // OR there are two sync packets with the same new switch mode,
     // as a "confirm". No RC packets are processed until
-    if (connectionState == disconnected ||
+    if (getConnectionState() == disconnected ||
         SwitchModePending == newSwitchModePending)
     {
         // Add one to the mode because SwitchModePending==0 means no switch pending
@@ -1087,7 +1087,7 @@ static bool ICACHE_RAM_ATTR ProcessRfPacket_SYNC(uint32_t const now, OTA_Sync_s 
     bool modelMatched = otaSync->UID5 == (UID[5] ^ modelXor);
     DBGVLN("MM %u=%u %d", otaSync->UID5, UID[5], modelMatched);
 
-    if (connectionState == disconnected
+    if (getConnectionState() == disconnected
         || OtaNonce != otaSync->nonce
         || FHSSgetCurrIndex() != otaSync->fhssIndex
         || connectionHasModelMatch != modelMatched)
@@ -1189,7 +1189,7 @@ bool ICACHE_RAM_ATTR ProcessRFPacket(SX12xxDriverCommon::rx_status const status)
 
 bool ICACHE_RAM_ATTR RXdoneISR(SX12xxDriverCommon::rx_status const status)
 {
-    if (LQCalc.currentIsSet() && connectionState == connected)
+    if (LQCalc.currentIsSet() && getConnectionState() == connected)
     {
         return false; // Already received a packet, do not run ProcessRFPacket() again.
     }
@@ -1270,7 +1270,7 @@ void MspReceiveComplete()
                         vtxSPIPowerIdx = MspData[10];
                         vtxSPIPitmode = MspData[11];
                     }
-                    devicesTriggerEvent();
+                    devicesTriggerEvent(EVENT_VTX_CHANGE);
                     break;
                 } else if (config.GetSerial1Protocol() == PROTOCOL_SERIAL1_TRAMP || config.GetSerial1Protocol() == PROTOCOL_SERIAL1_SMARTAUDIO) {
                     serial1IO->queueMSPFrameTransmission(MspData);
@@ -1559,7 +1559,7 @@ static void setupConfigAndPocCheck()
 
     // Set a deferred function to clear the power on counter if the RX has been running for more than 2s
     deferExecutionMillis(2000, []() {
-        if (connectionState != connected && config.GetPowerOnCounter() != 0)
+        if (getConnectionState() != connected && config.GetPowerOnCounter() != 0)
         {
             config.SetPowerOnCounter(0);
             config.Commit();
@@ -1609,7 +1609,7 @@ static void setupRadio()
     if (!init_success)
     {
         DBGLN("Failed to detect RF chipset!!!");
-        connectionState = radioFailed;
+        setConnectionState(radioFailed);
         return;
     }
 
@@ -1655,7 +1655,7 @@ static void updateTelemetryBurst()
  */
 static void cycleRfMode(unsigned long now)
 {
-    if (connectionState == connected || connectionState == wifiUpdate || InBindingMode)
+    if (getConnectionState() == connected || getConnectionState() == wifiUpdate || InBindingMode)
         return;
 
     // Actually cycle the RF mode if not LOCK_ON_FIRST_CONNECTION
@@ -1708,7 +1708,7 @@ static void EnterBindingMode()
     Radio.RXnb();
 
     DBGLN("Entered binding mode at freq = %d", Radio.currFreq);
-    devicesTriggerEvent();
+    devicesTriggerEvent(EVENT_ENTER_BIND_MODE);
 }
 
 static void ExitBindingMode()
@@ -1741,7 +1741,7 @@ static void ExitBindingMode()
     // if we're in binding mode
     InBindingMode = false;
     DBGLN("Exiting binding mode");
-    devicesTriggerEvent();
+    devicesTriggerEvent(EVENT_EXIT_BIND_MODE);
 }
 
 static void updateBindingMode(unsigned long now)
@@ -1790,7 +1790,7 @@ static void updateBindingMode(unsigned long now)
     {
         DBGLN("Connected request to enter binding mode");
         BindingModeRequest = false;
-        if (connectionState == connected)
+        if (getConnectionState() == connected)
         {
             LostConnection(false);
             // Skip entering bind mode if on loan. This comes from an OTA request
@@ -1803,7 +1803,7 @@ static void updateBindingMode(unsigned long now)
                 config.Commit(); // prevents CheckConfigChangePending() re-enabling radio
                 Radio.End();
                 // Enter a completely invalid state for a receiver, to prevent wifi or radio enabling
-                connectionState = noCrossfire;
+                setConnectionState(noCrossfire);
                 return;
             }
             // if the InitRate config item was changed by LostConnection
@@ -1819,14 +1819,14 @@ void EnterBindingModeSafely()
 {
     // Will not enter Binding mode if in the process of a passthrough update
     // or currently binding
-    if (connectionState == serialUpdate || InBindingMode)
+    if (getConnectionState() == serialUpdate || InBindingMode)
         return;
 
     // Never enter wifi mode after requesting to enter binding mode
     webserverPreventAutoStart = true;
 
     // If the radio and everything is shut down, better to reboot and boot to binding mode
-    if (connectionState == wifiUpdate || connectionState == bleJoystick)
+    if (getConnectionState() == wifiUpdate || getConnectionState() == bleJoystick)
     {
         // Force 3-plug binding mode
         config.SetPowerOnCounter(3);
@@ -1836,7 +1836,7 @@ void EnterBindingModeSafely()
     }
 
     // If connected, handle that in updateBindingMode()
-    if (connectionState == connected)
+    if (getConnectionState() == connected)
     {
         BindingModeRequest = true;
         return;
@@ -1849,12 +1849,12 @@ static void checkSendLinkStatsToFc(uint32_t now)
 {
     if (now - SendLinkStatstoFCintervalLastSent > SEND_LINK_STATS_TO_FC_INTERVAL)
     {
-        if (connectionState == disconnected)
+        if (getConnectionState() == disconnected)
         {
             getRFlinkInfo();
         }
 
-        if ((connectionState != disconnected && connectionHasModelMatch && teamraceHasModelMatch) ||
+        if ((getConnectionState() != disconnected && connectionHasModelMatch && teamraceHasModelMatch) ||
             SendLinkStatstoFCForcedSends)
         {
             serialIO->queueLinkStatisticsPacket();
@@ -1946,11 +1946,11 @@ static void updateSwitchMode()
 
 static void CheckConfigChangePending()
 {
-    if (config.IsModified() && !InBindingMode && connectionState < NO_CONFIG_SAVE_STATES)
+    if (config.IsModified() && !InBindingMode && getConnectionState() < NO_CONFIG_SAVE_STATES)
     {
         LostConnection(false);
-        config.Commit();
-        devicesTriggerEvent();
+        uint32_t changes = config.Commit();
+        devicesTriggerEvent(changes);
 #if defined(Regulatory_Domain_EU_CE_2400)
         LBTEnabled = (config.GetPower() > PWR_10mW);
 #endif
@@ -2005,7 +2005,7 @@ void setup()
         devicesRegister(wifi_device, ARRAY_SIZE(wifi_device));
         devicesInit();
 
-        connectionState = hardwareUndefined;
+        setConnectionState(hardwareUndefined);
     }
     else
     {
@@ -2049,7 +2049,7 @@ void setup()
 
         setupRadio();
 
-        if (connectionState != radioFailed)
+        if (getConnectionState() != radioFailed)
         {
             // RFnoiseFloor = MeasureNoiseFloor(); //TODO move MeasureNoiseFloor to driver libs
             // DBGLN("RF noise floor: %d dBm", RFnoiseFloor);
@@ -2097,17 +2097,17 @@ void loop()
     executeDeferredFunction(micros());
 
     // Clear the power-on-count
-    if ((connectionState == connected || connectionState == tentative) && config.GetPowerOnCounter() != 0)
+    if ((getConnectionState() == connected || getConnectionState() == tentative) && config.GetPowerOnCounter() != 0)
     {
         config.SetPowerOnCounter(0);
     }
 
-    if (connectionState > MODE_STATES)
+    if (getConnectionState() > MODE_STATES)
     {
         return;
     }
 
-    if ((connectionState != disconnected) && (ExpressLRS_currAirRate_Modparams->index != ExpressLRS_nextAirRateIndex)) // forced change
+    if ((getConnectionState() != disconnected) && (ExpressLRS_currAirRate_Modparams->index != ExpressLRS_nextAirRateIndex)) // forced change
     {
         DBGLN("Req air rate change %u->%u", ExpressLRS_currAirRate_Modparams->index, ExpressLRS_nextAirRateIndex);
         if (!isSupportedRFRate(ExpressLRS_nextAirRateIndex))
@@ -2122,7 +2122,7 @@ void loop()
         SendLinkStatstoFCForcedSends = 2;
     }
 
-    if (connectionState == tentative && (now - LastSyncPacket > ExpressLRS_currAirRate_RFperfParams->RxLockTimeoutMs))
+    if (getConnectionState() == tentative && (now - LastSyncPacket > ExpressLRS_currAirRate_RFperfParams->RxLockTimeoutMs))
     {
         DBGLN("Bad sync, aborting");
         LostConnection(true);
@@ -2133,12 +2133,12 @@ void loop()
     cycleRfMode(now);
 
     uint32_t localLastValidPacket = LastValidPacket; // Required to prevent race condition due to LastValidPacket getting updated from ISR
-    if ((connectionState == connected) && ((int32_t)ExpressLRS_currAirRate_RFperfParams->DisconnectTimeoutMs < (int32_t)(now - localLastValidPacket))) // check if we lost conn.
+    if ((getConnectionState() == connected) && ((int32_t)ExpressLRS_currAirRate_RFperfParams->DisconnectTimeoutMs < (int32_t)(now - localLastValidPacket))) // check if we lost conn.
     {
         LostConnection(true);
     }
 
-    if ((connectionState == tentative) && (abs(LPF_OffsetDx.value()) <= 10) && (LPF_Offset.value() < 100) && (LQCalc.getLQRaw() > minLqForChaos())) //detects when we are connected
+    if ((getConnectionState() == tentative) && (abs(LPF_OffsetDx.value()) <= 10) && (LPF_Offset.value() < 100) && (LQCalc.getLQRaw() > minLqForChaos())) //detects when we are connected
     {
         GotConnection(now);
     }
@@ -2210,6 +2210,6 @@ void reset_into_bootloader(void)
     ESP.rebootIntoUartDownloadMode();
 #elif defined(PLATFORM_ESP32)
     delay(100);
-    connectionState = serialUpdate;
+    setConnectionState(serialUpdate);
 #endif
 }

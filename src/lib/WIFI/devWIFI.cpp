@@ -107,7 +107,7 @@ void setWifiUpdateMode()
   // No need to ExitBindingMode(), the radio will be stopped stopped when start the Wifi service.
   // Need to change this before the mode change event so the LED is updated
   InBindingMode = false;
-  connectionState = wifiUpdate;
+  setConnectionState(wifiUpdate);
 }
 
 /** Is this an IP? */
@@ -189,7 +189,7 @@ static void WebUpdateHandleRoot(AsyncWebServerRequest *request)
   }
   force_update = request->hasArg("force");
   AsyncWebServerResponse *response;
-  if (connectionState == hardwareUndefined)
+  if (getConnectionState() == hardwareUndefined)
   {
     response = request->beginResponse_P(200, "text/html", (uint8_t*)HARDWARE_HTML, sizeof(HARDWARE_HTML));
   }
@@ -924,7 +924,7 @@ static void startWiFi(unsigned long now)
     return;
   }
 
-  if (connectionState < FAILURE_STATES) {
+  if (getConnectionState() < FAILURE_STATES) {
     hwTimer::stop();
 #if defined(TARGET_RX) && defined(PLATFORM_ESP32)
     disableVTxSpi();
@@ -1267,7 +1267,7 @@ static int start()
 
 static int event()
 {
-  if (connectionState == wifiUpdate || connectionState > FAILURE_STATES)
+  if (getConnectionState() == wifiUpdate || getConnectionState() > FAILURE_STATES)
   {
     if (!wifiStarted) {
       startWiFi(millis());
@@ -1309,13 +1309,13 @@ static int timeout()
   #if defined(TARGET_TX)
   // if webupdate was requested before or .wifi_auto_on_interval has elapsed but uart is not detected
   // start webupdate, there might be wrong configuration flashed.
-  if(firmwareOptions.wifi_auto_on_interval != -1 && webserverPreventAutoStart == false && connectionState < wifiUpdate && !wifiStarted){
+  if(firmwareOptions.wifi_auto_on_interval != -1 && webserverPreventAutoStart == false && getConnectionState() < wifiUpdate && !wifiStarted){
     DBGLN("No CRSF ever detected, starting WiFi");
     setWifiUpdateMode();
     return DURATION_IMMEDIATELY;
   }
   #elif defined(TARGET_RX)
-  if (firmwareOptions.wifi_auto_on_interval != -1 && !webserverPreventAutoStart && (connectionState == disconnected))
+  if (firmwareOptions.wifi_auto_on_interval != -1 && !webserverPreventAutoStart && (getConnectionState() == disconnected))
   {
     static bool pastAutoInterval = false;
     // If InBindingMode then wait at least 60 seconds before going into wifi,
@@ -1336,5 +1336,5 @@ device_t WIFI_device = {
   .initialize = initialize,
   .start = start,
   .event = event,
-  .timeout = timeout
-};
+  .timeout = timeout,
+  .subscribe = EVENT_CONNECTION_CHANGED};
