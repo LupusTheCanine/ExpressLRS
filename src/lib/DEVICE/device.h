@@ -11,7 +11,7 @@ typedef struct {
     /**
      * @brief Called at the beginning of setup() so the device can configure IO pins etc.
      */
-    void (*initialize)();
+    bool (*initialize)();
 
     /**
      * @brief called at the end of setup() and returns the number of milliseconds when
