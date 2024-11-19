@@ -629,8 +629,8 @@ static int event()
 
   if (config.GetSerialProtocol() == PROTOCOL_MAVLINK)
   {
-    setLuaUint8Value(&luaSourceSysId, config.GetSourceSysId() == 0 ? 255 : config.GetSourceSysId());  //display Source sysID if 0 display 255 to mimic logic in SerialMavlink.cpp
-    setLuaUint8Value(&luaTargetSysId, config.GetTargetSysId() == 0 ? 1 : config.GetTargetSysId());  //display Target sysID if 0 display 1 to mimic logic in SerialMavlink.cpp
+    setLuaUint8Value(&luaSourceSysId, config.GetSourceSysId());  //display Source sysID if 0 display 255 to mimic logic in SerialMavlink.cpp
+    setLuaUint8Value(&luaTargetSysId, config.GetTargetSysId());  //display Target sysID if 0 display 1 to mimic logic in SerialMavlink.cpp
     LUA_FIELD_SHOW(luaSourceSysId)
     LUA_FIELD_SHOW(luaTargetSysId)
   }

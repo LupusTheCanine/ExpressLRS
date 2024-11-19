@@ -104,6 +104,14 @@ public:
      */
     virtual bool sendImmediateRC() { return false; }
 
+    /**
+     * @brief An event was fired in the main code, perform any required action that this
+     * device requires. As this runs as a part of devSerialIO event modifying timeout is not supported.
+     * */
+    void (*event)();
+    
+    uint32_t subscribe = 0;
+
 protected:
     /// @brief the output stream for the serial port
     Stream *_outputPort;

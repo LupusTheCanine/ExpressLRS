@@ -21,12 +21,12 @@ SerialMavlink::SerialMavlink(Stream &out, Stream &in):
     SerialIO(&out, &in),
     
     //system ID of the device component sending command to FC, can be set using lua options, 0 is the default value for initialized storage, treat it as 255 which is commonly used as GCS SysID
-    this_system_id(config.GetSourceSysId() ? config.GetSourceSysId() : 255),
+    this_system_id(config.GetSourceSysId()),
     //use telemetry radio compId as we are providing radio status messages and pass telemetry
     this_component_id(MAV_COMPONENT::MAV_COMP_ID_TELEMETRY_RADIO),
 
     // system ID of vehicle we want to control must be the same as target vehicle, can be set using lua options, 0 is the default value for initialized storage, treat it as 1 which is commonly used as UAV SysID in 1:1 networks
-    target_system_id(config.GetTargetSysId() ? config.GetTargetSysId() : 1),
+    target_system_id(config.GetTargetSysId()),
     // Send to all components as we may have ex. gimbal that listens to RC instead of using Autopilot driver
     target_component_id(MAV_COMPONENT::MAV_COMP_ID_ALL)
 {
@@ -143,4 +143,9 @@ void SerialMavlink::sendQueuedData(uint32_t maxBytesToSend)
     }
 }
 
+void SerialMavlink::event()
+{
+    this_system_id = config.GetSourceSysId();
+    target_system_id = config.GetTargetSysId();
+}
 #endif // defined(TARGET_RX)

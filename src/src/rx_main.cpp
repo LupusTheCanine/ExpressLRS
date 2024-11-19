@@ -1422,6 +1422,9 @@ static void setupSerial()
     {
         serialIO = new SerialCRSF(SERIAL_PROTOCOL_TX, SERIAL_PROTOCOL_RX);
     }
+    Serial0_device.subscribe = EVENT_CONNECTION_CHANGED; // as defined in devSerialIO.cpp Serial0_device declaration 
+    Serial0_device.subscribe |= serialIO->subscribe;
+
 
 #if defined(DEBUG_ENABLED)
 #if defined(PLATFORM_ESP32_S3) || defined(PLATFORM_ESP32_C3)
@@ -1515,6 +1518,9 @@ static void setupSerial1()
             serial1IO = new SerialDisplayport(SERIAL1_PROTOCOL_TX, SERIAL1_PROTOCOL_RX);
             break;
     }
+    Serial1_device.subscribe = EVENT_CONNECTION_CHANGED; // as defined in devSerialIO.cpp Serial1_device declaration
+    Serial1_device.subscribe |= serial1IO->subscribe;
+
 }
 
 void reconfigureSerial1()

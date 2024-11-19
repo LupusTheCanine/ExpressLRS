@@ -270,8 +270,8 @@ public:
     uint8_t GetTeamraceChannel() const { return m_config.teamraceChannel; }
     uint8_t GetTeamracePosition() const { return m_config.teamracePosition; }
     eFailsafeMode GetFailsafeMode() const { return (eFailsafeMode)m_config.failsafeMode; }
-    uint8_t GetTargetSysId()  const { return m_config.targetSysId; }
-    uint8_t GetSourceSysId()  const { return m_config.sourceSysId; }
+    uint8_t GetTargetSysId()  const { return m_config.targetSysId ? m_config.targetSysId : 1 ; } //handle default value in config getter, avoids missed checks
+    uint8_t GetSourceSysId()  const { return m_config.sourceSysId ? m_config.sourceSysId : 255 ; } //handle default value in config getter, avoids missed checks
     rx_config_bindstorage_t GetBindStorage() const { return (rx_config_bindstorage_t)m_config.bindStorage; }
     bool IsOnLoan() const;
 

@@ -71,9 +71,11 @@ static int event(devserial_ctx_t *ctx)
         if (ctx->lastConnectionState != getConnectionState())
         {
             (*(ctx->io))->setFailsafe(getConnectionState() == disconnected);
+        }else if((*(ctx->io))->event != nullptr)
+        {
+            (*(ctx->io))->event();
         }
     }
-
     ctx->lastConnectionState = getConnectionState();
 
     return DURATION_IGNORE;
@@ -278,7 +280,8 @@ device_t Serial0_device = {
     .start = start,
     .event = event0,
     .timeout = timeout0,
-    .subscribe = EVENT_CONNECTION_CHANGED};
+    .subscribe = EVENT_CONNECTION_CHANGED}; //.subscribe change needs to be mirrored in SetupSerial in rx_main.cpp (Serial0_device.subscribe = EVENT_CONNECTION_CHANGED;)
+)
 
 #if defined(PLATFORM_ESP32)
 device_t Serial1_device = {
@@ -286,7 +289,7 @@ device_t Serial1_device = {
     .start = start,
     .event = event1,
     .timeout = timeout1,
-    .subscribe = EVENT_CONNECTION_CHANGED};
+    .subscribe = EVENT_CONNECTION_CHANGED};  //.subscribe change needs to be mirrored in SetupSerial1 in rx_main.cpp (Serial0_device.subscribe = EVENT_CONNECTION_CHANGED;)
 #endif
 
 #endif
