@@ -19,7 +19,7 @@
 
 #include "ardupilot_custom_telemetry.h"
 #include "common/mavlink.h"
-
+#include <math.h>
 /*
  * Known Issues:
  * - Battery Capacity is currently not available via Mavlink BATTERY_INFO message is not implemented on Ardupilot side.
@@ -434,7 +434,7 @@ uint32_t format_velandyaw(float climb_mps, float airspeed_mps, float groundspeed
  * This is the content of the 0x5006 Attitude and RangeFinder.
  * We don't provide Rangefinder here.
  */
-uint32_t format_attiandrng(float pitch_rad, float roll_rad)
+uint32_t format_attiandrng(float pitch_rad, float roll_rad, float distance)
 {
 #define ATTIANDRNG_ROLL_LIMIT       0x7FF
 #define ATTIANDRNG_PITCH_LIMIT      0x3FF
@@ -442,6 +442,7 @@ uint32_t format_attiandrng(float pitch_rad, float roll_rad)
 #define ATTIANDRNG_RNGFND_OFFSET    21
     uint32_t attiandrng = ((((uint16_t)(roll_rad * 286.0f)) + 900) & ATTIANDRNG_ROLL_LIMIT);
     attiandrng |= ((((uint16_t)(pitch_rad * 286.0f)) + 450) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
+    attiandrng |= ((uint16_t)(distance * 100)) << ATTIANDRNG_RNGFND_OFFSET;
     return attiandrng;
 }
 
@@ -487,3 +488,32 @@ uint32_t format_waypoint(uint8_t heading, uint16_t distance, uint16_t number)
     return value;
 }
 
+/*
+ * Adapted from Ardupilot's AP_Frsky_SPort_Passthrough::calc_rpm()
+ * This is the content of the 0x500A rpm.
+ */
+
+ uint32_t format_rpm(float rpm1, float rpm2)
+ {
+    uint32_t value = 0;
+    value |= (int16_t)roundf(rpm1 * 0.1);
+    value |= (int16_t)roundf(rpm2 * 0.1)<<16;
+    return value;
+ }
+
+ /*
+ * Adapted from Ardupilot's AP_Frsky_SPort_Passthrough::calc_wind()
+ * This is the content of the 0x500C wind.
+ */
+ uint32_t format_wind(float direction, float speed)
+ {  
+    #define WIND_ANGLE_LIMIT            0x7F
+    #define WIND_SPEED_OFFSET           7
+    #define WIND_APPARENT_ANGLE_OFFSET  15
+    #define WIND_APPARENT_SPEED_OFFSET  22
+    uint32_t value = 0;
+    value |= prep_number(direction*(1.0 / 3.0), 2, 0);
+    value |= prep_number(speed * 10, 2, 1)<<WIND_SPEED_OFFSET;
+    //apparent wind is not used by Yaapu's script 
+    return value;
+ }

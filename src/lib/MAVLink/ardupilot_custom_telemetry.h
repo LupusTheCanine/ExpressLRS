@@ -86,7 +86,7 @@ uint32_t format_velandyaw(float climb_mps, float airspeed_mps, float groundspeed
  * This is the content of the 0x5006 Attitude and RangeFinder.
  * We don't provide Rangefinder here.
  */
-uint32_t format_attiandrng(float pitch_rad, float roll_rad);
+uint32_t format_attiandrng(float pitch_rad, float roll_rad, float distance);
 
 /*
  * Adapted from Ardupilot's AP_Frsky_SPort_Passthrough::calc_param()
@@ -106,3 +106,15 @@ uint32_t format_terrain(uint32_t altitude_terrain);
  */
 uint32_t format_waypoint(uint8_t heading, uint16_t distance, uint16_t number);
 
+/*
+ * Adapted from Ardupilot's AP_Frsky_SPort_Passthrough::calc_rpm()
+ * This is the content of the 0x500A rpm.
+ */
+ uint32_t format_rpm(float rpm1, float rpm2);
+
+ /*
+ * Adapted from Ardupilot's AP_Frsky_SPort_Passthrough::calc_wind()
+ * This is the content of the 0x500C wind.
+ */
+ uint32_t format_wind(float direction, float speed);
+ 

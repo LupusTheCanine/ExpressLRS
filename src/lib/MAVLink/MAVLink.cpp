@@ -91,6 +91,11 @@ void convert_mavlink_to_crsf_telem(crsf_addr_e destination, uint8_t *CRSFinBuffe
     static int32_t home_latitude_degE7 = 0;
     static int32_t home_longitude_degE7 = 0;
 
+    // Store rangefinder data to be sent
+    
+    static uint16_t rangefinderValue = 0;
+
+
     for (uint8_t i = 0; i < count; i++)
     {
         mavlink_message_t msg;
@@ -100,7 +105,7 @@ void convert_mavlink_to_crsf_telem(crsf_addr_e destination, uint8_t *CRSFinBuffe
         if (have_message)
         {
             // Only parse heartbeats from the autopilot (not GCS)
-            if (msg.compid != MAV_COMP_ID_AUTOPILOT1)
+            if (msg.compid != MAV_COMP_ID_AUTOPILOT1 || msg.sysid != 1) //TODO: makeSysID adjustable
             {
                 continue;
             }
@@ -200,7 +205,7 @@ void convert_mavlink_to_crsf_telem(crsf_addr_e destination, uint8_t *CRSFinBuffe
                 crsfRouter.deliverMessageTo(destination, &crsfatt.h);
 
                 // send the attitude message to Yaapu Telemetry Script
-                ap_send_crsf_passthrough_single(destination, 0x5006, format_attiandrng(attitude.pitch, attitude.roll));
+                ap_send_crsf_passthrough_single(destination, 0x5006, format_attiandrng(attitude.pitch, attitude.roll, rangefinderValue)); //send stashed rangefinder value too.
                 break;
             }
             case MAVLINK_MSG_ID_HEARTBEAT: {
@@ -310,6 +315,36 @@ void convert_mavlink_to_crsf_telem(crsf_addr_e destination, uint8_t *CRSFinBuffe
                 mavlink_msg_high_latency2_decode(&msg, &high_latency_data);
                 // send the waypoint message to Yaapu Telemetry Script
                 ap_send_crsf_passthrough_single(destination, 0x500D, format_waypoint(high_latency_data.target_heading, high_latency_data.target_distance, high_latency_data.wp_num));
+                break;
+            }
+            case MAVLINK_MSG_ID_DISTANCE_SENSOR: {
+                mavlink_distance_sensor_t distance_sensor_data;
+                mavlink_msg_distance_sensor_decode(&msg, &distance_sensor_data);
+                if(distance_sensor_data.orientation == 25) // 25 is down 
+                {
+                    rangefinderValue = distance_sensor_data.current_distance;
+                }
+                break;
+            }
+            case MAVLINK_MSG_ID_RPM: {
+                mavlink_rpm_t rpm_data;
+                mavlink_msg_rpm_decode(&msg, &rpm_data);
+                ap_send_crsf_passthrough_single(destination, 0x500A, format_rpm(rpm_data.rpm1,rpm_data.rpm2));
+                break;
+            }
+            case MAVLINK_MSG_ID_WIND: {
+                mavlink_wind_t wind_data;
+                mavlink_msg_wind_decode(&msg, &wind_data);
+                ap_send_crsf_passthrough_single(destination, 0x500C, format_wind(wind_data.direction,wind_data.speed));
+
+                break;
+            }
+            case MAVLINK_MSG_ID_MISSION_CURRENT: {
+
+                break;
+            }
+            case MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT: {
+                
                 break;
             }
             }
