@@ -90,6 +90,8 @@ void convert_mavlink_to_crsf_telem(crsf_addr_e destination, uint8_t *CRSFinBuffe
     // Store the home position for distance and bearing calculation
     static int32_t home_latitude_degE7 = 0;
     static int32_t home_longitude_degE7 = 0;
+    
+    static wp_info_t wp_info;
 
     // Store rangefinder data to be sent
     
@@ -314,15 +316,19 @@ void convert_mavlink_to_crsf_telem(crsf_addr_e destination, uint8_t *CRSFinBuffe
                 mavlink_high_latency2_t high_latency_data;
                 mavlink_msg_high_latency2_decode(&msg, &high_latency_data);
                 // send the waypoint message to Yaapu Telemetry Script
-                ap_send_crsf_passthrough_single(destination, 0x500D, format_waypoint(high_latency_data.target_heading, high_latency_data.target_distance, high_latency_data.wp_num));
+                wp_info.seq = high_latency_data.wp_num;
+                wp_info.heading = high_latency_data.target_heading*200; //high latency encodes heading as demidegree, standard is centideg
+                wp_info.distance = high_latency_data.target_distance;
+                ap_send_crsf_passthrough_single(destination, 0x500D, format_waypoint(wp_info));
                 break;
             }
             case MAVLINK_MSG_ID_DISTANCE_SENSOR: {
                 mavlink_distance_sensor_t distance_sensor_data;
                 mavlink_msg_distance_sensor_decode(&msg, &distance_sensor_data);
-                if(distance_sensor_data.orientation == 25) // 25 is down 
+                if(distance_sensor_data.orientation == 25) // 25 is down, should be configurable to handle custom rotation and tailsitters which may use backwards rangefinder 
                 {
                     rangefinderValue = distance_sensor_data.current_distance;
+                    //we do not send atti frame here to avoid sending stale attituede.
                 }
                 break;
             }
@@ -340,11 +346,18 @@ void convert_mavlink_to_crsf_telem(crsf_addr_e destination, uint8_t *CRSFinBuffe
                 break;
             }
             case MAVLINK_MSG_ID_MISSION_CURRENT: {
-
+                mavlink_mission_current_t miss_curr_data;
+                mavlink_msg_mission_current_decode(&msg, &miss_curr_data);
+                wp_info.seq = miss_curr_data.seq;
+                ap_send_crsf_passthrough_single(destination, 0x500D, format_waypoint(wp_info));
                 break;
             }
             case MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT: {
-                
+                mavlink_nav_controller_output_t nav_ctrl_out_data;
+                mavlink_msg_mission_current_decode(&msg, &nav_ctrl_out_data);
+                wp_info.heading = nav_ctrl_out_data.target_bearing;
+                wp_info.distance = nav_ctrl_out_data.wp_dist;
+                ap_send_crsf_passthrough_single(destination, 0x500D, format_waypoint(wp_info));
                 break;
             }
             }

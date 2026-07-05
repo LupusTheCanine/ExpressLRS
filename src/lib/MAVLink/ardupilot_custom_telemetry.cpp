@@ -18,7 +18,7 @@
  */
 
 #include "ardupilot_custom_telemetry.h"
-#include "all/mavlink.h"
+//#include "all/mavlink.h"
 #include <math.h>
 /*
  * Known Issues:
@@ -474,17 +474,17 @@ uint32_t format_terrain(uint32_t altitude_terrain)
  * Adapted from Ardupilot's AP_Frsky_SPort_Passthrough::calc_waypoint()
  * This is the content of the 0x500B terrain.
  */
-uint32_t format_waypoint(uint8_t heading, uint16_t distance, uint16_t number)
+uint32_t format_waypoint(const wp_info_t &wp_info)
 {
 #define WP_NUMBER_LIMIT             2047
 #define WP_DISTANCE_LIMIT           1023000
 #define WP_DISTANCE_OFFSET          11
 #define WP_BEARING_OFFSET           23
-    uint32_t value = MIN(number, WP_NUMBER_LIMIT);
+    uint32_t value = MIN(wp_info.seq, WP_NUMBER_LIMIT);
     // distance to next waypoint
-    value |= prep_number(distance, 3, 2) << WP_DISTANCE_OFFSET;
-    // bearing encoded in 3 degrees increments
-    value |= (heading * 2 / 3) << WP_BEARING_OFFSET;
+    value |= prep_number(wp_info.distance, 3, 2) << WP_DISTANCE_OFFSET;
+    // bearing encoded in 3 degrees increments, +150 for rounding cdeg to nearest 3deg point
+    value |= ((wp_info.heading+150) / 300) << WP_BEARING_OFFSET;
     return value;
 }
 

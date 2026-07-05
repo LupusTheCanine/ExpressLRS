@@ -100,11 +100,17 @@ uint32_t format_param(uint8_t param_id, uint32_t param_value);
  */
 uint32_t format_terrain(uint32_t altitude_terrain);
 
+struct wp_info_t{
+    uint16_t seq;
+    uint16_t heading;  //cdeg
+    uint16_t distance; //m
+};
+
 /*
  * Adapted from Ardupilot's AP_Frsky_SPort_Passthrough::calc_waypoint()
  * This is the content of the 0x500B terrain.
  */
-uint32_t format_waypoint(uint8_t heading, uint16_t distance, uint16_t number);
+uint32_t format_waypoint(wp_info_t wp_info);
 
 /*
  * Adapted from Ardupilot's AP_Frsky_SPort_Passthrough::calc_rpm()
