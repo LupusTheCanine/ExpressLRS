@@ -354,7 +354,7 @@ void convert_mavlink_to_crsf_telem(crsf_addr_e destination, uint8_t *CRSFinBuffe
             }
             case MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT: {
                 mavlink_nav_controller_output_t nav_ctrl_out_data;
-                mavlink_msg_mission_current_decode(&msg, &nav_ctrl_out_data);
+                mavlink_msg_nav_controller_output_decode(&msg, &nav_ctrl_out_data);
                 wp_info.heading = nav_ctrl_out_data.target_bearing;
                 wp_info.distance = nav_ctrl_out_data.wp_dist;
                 ap_send_crsf_passthrough_single(destination, 0x500D, format_waypoint(wp_info));

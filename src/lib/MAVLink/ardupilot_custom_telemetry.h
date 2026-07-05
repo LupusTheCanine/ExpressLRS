@@ -110,7 +110,7 @@ struct wp_info_t{
  * Adapted from Ardupilot's AP_Frsky_SPort_Passthrough::calc_waypoint()
  * This is the content of the 0x500B terrain.
  */
-uint32_t format_waypoint(wp_info_t wp_info);
+uint32_t format_waypoint(const wp_info_t &wp_info);
 
 /*
  * Adapted from Ardupilot's AP_Frsky_SPort_Passthrough::calc_rpm()

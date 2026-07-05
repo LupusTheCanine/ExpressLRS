@@ -18,7 +18,7 @@
  */
 
 #include "ardupilot_custom_telemetry.h"
-//#include "all/mavlink.h"
+#include "all/mavlink.h"
 #include <math.h>
 /*
  * Known Issues:
